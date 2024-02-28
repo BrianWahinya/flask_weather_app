@@ -18,21 +18,37 @@ def index():
 def get_weather():
     try: 
         city = request.args.get('city').strip()
-        if valid_input(city):
-            weather_data = get_weather_data(city)
-            # print(weather_data)
+
+        # checks for empty or spaces
+        if not valid_input(city): 
+            return render_template(
+                "error.html",
+                message="Invalid inputs"
+            )
+        
+        weather_data = get_weather_data(city)
+
+        # On success display
+        if weather_data['cod'] in {200, str(200)}:
             return render_template(
                 "weather.html",
                 city=weather_data["name"].upper(),
                 status=weather_data["weather"][0]["description"].capitalize(),
                 temperature=f"{weather_data['main']['temp']:.1f}"
             )
-        else:
-            raise Exception
-    except:
-        return render_template("error.html")
+        
+        # if city not found
+        if weather_data['cod'] in {404, str(404)}:
+            return render_error(f"Error: {city} not found")
+        
+        # all other cases
+        return render_error(weather_data['message'] or weather_data)
     
-
+    except Exception as e:
+        return render_error("Empty or invalid inputs")
+    
+def render_error(msg):
+    return render_template("error.html", message=msg)
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8000, debug=True)
